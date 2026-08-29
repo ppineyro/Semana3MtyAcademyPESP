@@ -30,6 +30,9 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 /**
  * Configuracion de seguridad con JWT.
  *
@@ -66,6 +69,11 @@ public class SecurityConfig {
                 "select user_id, role from roles where user_id=?");
 
         return theUserDetailsManager;
+    }
+    
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     /**
@@ -104,7 +112,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT,    "/api/naves").hasRole("MANAGER")
                 .requestMatchers(HttpMethod.PATCH,  "/api/naves/**").hasRole("MANAGER")
                 .requestMatchers(HttpMethod.DELETE, "/api/naves/**").hasRole("ADMIN")
-                .anyRequest().authenticated());
+                .anyRequest().authenticated())
+				// habilita el auth basic (usuario y contraseña)
+				.httpBasic(Customizer.withDefaults())
+				// habilita validacion de tokens JWT (resource server)
+				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+				// habilita el login thru proveedor externo (OAuth2)
+				.oauth2Login(Customizer.withDefaults());
 
         // Aqui esta el cambio de fondo: ya no se acepta HTTP Basic.
         // Esta cadena solo entiende "Authorization: Bearer <token>".
